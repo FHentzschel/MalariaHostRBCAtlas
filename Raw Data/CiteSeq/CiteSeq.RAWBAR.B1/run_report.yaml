@@ -1,0 +1,24 @@
+Date: 2020-09-01
+Running time: 2.0 hours, 26.0 minutes, 2.933 seconds
+CITE-seq-Count Version: 1.4.3
+Reads processed: 17432382
+Percentage mapped: 95
+Percentage unmapped: 5
+Uncorrected cells: 23
+Correction:
+	Cell barcodes collapsing threshold: 1
+	Cell barcodes corrected: 26830
+	UMI collapsing threshold: 2
+	UMIs corrected: 489335
+Run parameters:
+	Read1_paths: fastq1/BL-cite_S21_R1_001.fastq.gz
+	Read2_paths: fastq1/BL-cite_S21_R2_001.fastq.gz
+	Cell barcode:
+		First position: 1
+		Last position: 16
+	UMI barcode:
+		First position: 17
+		Last position: 26
+	Expected cells: 9000
+	Tags max errors: 2
+	Start trim: 0
