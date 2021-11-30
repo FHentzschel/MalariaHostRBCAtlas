@@ -8,6 +8,7 @@ library(scico)
 library(pheatmap)
 library(RColorBrewer)
 library(magrittr)
+library(ggbeeswarm)
 
 
 setwd("E:/OneDrive - University of Glasgow/2 Projects/2 scRNAseq/S BM B scRNAseq/3 Code")
@@ -250,13 +251,24 @@ S
   # CD71 and retic analysis ----
   
   clipr::write_clip(table(Pb.combined.noMCA$CD71_Retic, Pb.combined.noMCA$orig.ident))
-  
+  clipr::write_clip(Pb.combined.noMCA[[]] %>% unite(col = sample, orig.ident, Stages) %>% 
+      group_by(sample) %>% select(CD71pos) %>% count(CD71pos) %>% spread(CD71pos, n) %>%
+      summarise(CD71 = 100*pos/(pos+neg))%>% 
+      separate(sample, into = c("orig.ident", "Stages"), sep = "_") %>% spread(Stages, CD71))
+      
+  clipr::write_clip(Pb.combined.noMCA[[]] %>% unite(col = sample, orig.ident, Stages) %>% 
+      group_by(sample) %>% select(CD71pos) %>% count(CD71pos) %>% 
+        separate(sample, into = c("orig.ident", "Stages"), sep = "_") %>% spread(CD71pos, n))
+      
   FeaturePlot(Pb.combined.noMCA, "CD71", pt.size = 2, max.cutoff = "q99", order = F, 
               cols = c(scico(100, palette = 'lajolla'))) & NoLegend() + 
               theme(plot.title = element_blank())
   
   DimPlot(Pb.combined.noMCA, group.by = "Retic", cols = col.Retic, pt.size = 2) & NoLegend() + 
     theme(plot.title = element_blank())
+  DimPlot(Pb.combined.noMCA, group.by = "Stages", split.by = "Retic", cols = col.stages, pt.size = 2) & NoLegend() + 
+    theme(plot.title = element_blank())
+  
   
   PlotMmUMI <- Pb.combined.noMCA[[c("Stages", "MmUMI1", "CD71pos")]]
   CD71 <- Pb.combined.noMCA@assays$ADT@data[row.names(Pb.combined.noMCA@assays$ADT@data) %in% "CD71",]
@@ -270,19 +282,61 @@ S
     geom_hline(yintercept = 100) + 
     geom_vline(xintercept = 1.5) + 
     theme_classic()
-  
-  Pb.subset <- subset(Pb.combined.noMCA, downsample = 300)
+
+  Pb.subset <- subset(Pb.combined.noMCA, downsample = 500)
   CD71 <- Pb.subset@assays$ADT@data[row.names(Pb.subset@assays$ADT@data) %in% "CD71",]
-  PlotMmUMI2 <- Pb.subset[[c("Stages", "MmUMI1", "CD71pos")]]
+  PlotMmUMI2 <- Pb.subset[[c("Stages", "MmUMI1", "CD71pos", "Retic")]]
   PlotMmUMI2$CD71 <- CD71
 
   ggplot(PlotMmUMI2, aes(x = Stages, y = MmUMI1, fill = Stages)) + 
     geom_violin(trim = T, scale = "width") + scale_y_log10() + 
     scale_fill_manual(values = col.stages) + 
-    geom_jitter(height = 0, width = 0.2, aes(colour = CD71pos)) +
+    geom_quasirandom(size = 1, aes(color = CD71pos)) + 
     scale_colour_manual(values = c("black", "violetred1")) + 
     geom_hline(yintercept = 100) + 
     theme_classic()
+  
+  ggplot(PlotMmUMI2, aes(x = Stages, y = MmUMI1, fill = Retic)) + 
+    geom_violin(trim = T, scale = "width") + scale_y_log10() + 
+    scale_fill_manual(values = col.Retic) + 
+    geom_jitter(height = 0, width = 0.2, (aes(colour = Retic))) +
+    geom_hline(yintercept = 100) + 
+    theme_classic()
+  
+  Pb.retic <- subset(Pb.combined.noMCA,subset = "Retic" == Retic)
+  
+  PlotMmUMI.R <- Pb.retic[[c("Stages", "MmUMI1", "PbUMI")]]
+  
+  ggplot(PlotMmUMI.R, aes(x = Stages, y = MmUMI1, fill = Stages)) + 
+    geom_violin(trim = T, scale = "width") + scale_y_log10() + 
+    geom_quasirandom(size = 0.5) +
+    scale_fill_manual(values = col.stages) +
+    theme_classic()
+  
+  clipr::write_clip(
+    Pb.combined.noMCA[[]] %>%  rownames_to_column() %>%
+      group_by(Stages) %>% select(rowname, Stages, MmUMI1) %>% 
+      spread(Stages, MmUMI1) %>% select(-c(rowname))
+  )
+  
+  clipr::write_clip(
+    subset(Pb.combined.noMCA,subset = "Retic" == Retic)[[]] %>%  rownames_to_column() %>%
+    group_by(Stages) %>% select(rowname, Stages, MmUMI1) %>% 
+      spread(Stages, MmUMI1) %>% select(-c(rowname))
+    )
+  
+  clipr::write_clip(
+    subset(Pb.combined.noMCA,subset = MmUMI < 100)[[]] %>%  rownames_to_column() %>%
+      group_by(Stages) %>% select(rowname, Stages, MmUMI1) %>% 
+      spread(Stages, MmUMI1) %>% select(-c(rowname))
+  )
+  
+  clipr::write_clip(
+  subset(Pb.combined.noMCA,subset = "Retic" == Retic)[[]] %>%  rownames_to_column() %>%
+    unite("orig_Stage", orig.ident, Stages) %>% group_by(orig_Stage) %>% summarize(mean(MmUMI)) %>%
+    separate(orig_Stage, c("orig.ident", "Stages"), sep = "_") %>% spread(Stages, 'mean(MmUMI)')
+  )
+  
   
   # DEG Retic vs Normo ----  
     
